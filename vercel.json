@@ -11,8 +11,5 @@
       "src": "/(.*)",
       "dest": "api/main.py"
     }
-  ],
-  "env": {
-    "DISCORD_WEBHOOK": "@discord_webhook"
-  }
+  ]
 }
