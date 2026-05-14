@@ -27,15 +27,35 @@ async def taiga_webhook(request: Request):
         event_type = payload.get("type")
         action = payload.get("action")
         data = payload.get("data", {})
+        by_user = payload.get("by", {})
 
-        message = f"📢 {event_type.upper()} {action.upper()}\n"
+        # Build Discord message
+        username = by_user.get("full_name", "Unknown")
+        subject = data.get("subject", "N/A")
+        ref = data.get("ref", "")
+        project = data.get("project", {}).get("name", "Unknown")
 
+        # Handle different event types
         if event_type == "task":
-            message += f"📝 {data.get('subject')}"
+            emoji = "✅"
+            message = f"{emoji} **Task {action.upper()}** in {project}\n📝 {subject}"
+        elif event_type == "userstory":
+            emoji = "📖"
+            message = f"{emoji} **User Story {action.upper()}** in {project}\n📖 #{ref} - {subject}"
+        elif event_type == "issue":
+            emoji = "🐛"
+            message = f"{emoji} **Issue {action.upper()}** in {project}\n🐛 {subject}"
+        else:
+            emoji = "🔔"
+            message = f"{emoji} **{event_type.upper()} {action.upper()}** in {project}\n{subject}"
 
-        requests.post(os.getenv("DISCORD_WEBHOOK"), json={"content": message})
+        message += f"\n👤 By: {username}"
 
-        return {"status": "ok"}
+        response = requests.post(os.getenv("DISCORD_WEBHOOK"), json={"content": message})
+        response.raise_for_status()
+
+        return {"status": "ok", "type": event_type, "action": action}
+    
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
